@@ -66,10 +66,10 @@ if uploaded_file is not None:
     st.write(city_data.describe())
 
     # Обработка данных для визуализации
-    seasonal_stats, anomalies = stat_city(city_data)
+    seasonal_stats, anomalies = stat_city(df)
 
     # Визуализация временного ряда температур
-    st.line_chart(city_data['temperature'], use_container_width=True)
+    st.line_chart(df['temperature'], use_container_width=True)
 
     # Выделяем аномалии
     if not anomalies.empty:

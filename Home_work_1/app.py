@@ -70,7 +70,7 @@ uploaded_file = st.file_uploader(
     "Загрузите файл с историческими данными (temperature_data.csv)", type=["csv"])
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
-
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
     # Выбор города
     cities = df['city'].unique()
     selected_city = st.selectbox("Выберите город", cities)

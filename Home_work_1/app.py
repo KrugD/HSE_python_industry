@@ -23,7 +23,9 @@ async def get_current_temperature_async(city, api_key):
 # Функция для проверки нормальности температуры
 
 
-def is_temperature_normal(temperature, season_stat, city, season):
+def is_temperature_normal(temperature, df, city, season):
+    season_stat = df.groupby(['city', 'season'])[
+        'temperature'].agg(['mean', 'std']).reset_index()
     if city in season_stat.city.unique() and season in season_stat.season.unique():
         mean = season_stat[(season_stat['city'] == city) & (
             season_stat['season'] == season)]['mean'].iloc[0]
@@ -116,7 +118,7 @@ if uploaded_file is not None:
             season = 'winter' if current_month in [12, 1, 2] else 'spring' if current_month in [
                 3, 4, 5] else 'summer' if current_month in [6, 7, 8] else 'fall'
 
-            if is_temperature_normal(current_temp, seasonal_stats, selected_city, season):
+            if is_temperature_normal(current_temp, df, selected_city, season):
                 st.write(
                     f"Температура в {selected_city}: {current_temp}°C (нормальная)")
             else:

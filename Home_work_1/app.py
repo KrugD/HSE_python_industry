@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 import asyncio
-
 from concurrent.futures import ThreadPoolExecutor
 
 st.title("Анализ температурных данных и мониторинг текущей температуры через OpenWeatherMap API")
@@ -13,13 +12,13 @@ st.write("Это интерактивное приложение для мони
 
 async def get_current_temperature_async(city, api_key):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
-    async with requests.get(url) as response:
-        if response.status_code == 200:
-            data = response.json()
-            return data['main']['temp']
-        else:
-            st.error(f"Ошибка API: {response.json()['message']}")
-            return None
+    response = requests.get(url)  # Изменено на обычный запрос
+    if response.status_code == 200:
+        data = response.json()
+        return data['main']['temp']
+    else:
+        st.error(f"Ошибка API: {response.json()['message']}")
+        return None
 
 # Функция для проверки нормальности температуры
 
@@ -49,7 +48,7 @@ def stat_city(city_data):
                           (city_data['temperature'] > (city_data['mean'] + 2 * city_data['std']))]
     return seasonal_stats, anomalies
 
-    # Получаем уникальные города
+# Получаем уникальные города
 
 
 def anomals_func(df):
@@ -62,8 +61,8 @@ def anomals_func(df):
 
     # Объединяем результаты
     season_stats_parallel = pd.concat([result[0] for result in results])
-    anomals_parallel = pd.concat([result[1] for result in results])
-    return season_stats_parallel, anomals_parallel
+    anomalies_parallel = pd.concat([result[1] for result in results])
+    return season_stats_parallel, anomalies_parallel
 
 
 # Загрузка файла
@@ -87,12 +86,17 @@ if uploaded_file is not None:
     seasonal_stats, anomalies = anomals_func(df)
 
     # Визуализация временного ряда температур
-    st.line_chart(df['temperature'], use_container_width=True)
+    st.line_chart(city_data.set_index('timestamp')[
+                  'temperature'], use_container_width=True)
 
     # Выделяем аномалии
     if not anomalies.empty:
+        # Добавляем столбец для обозначения аномалий
+        anomalies['is_anomaly'] = True
+        df['is_anomaly'] = df['city'].isin(
+            anomalies['city']) & df['season'].isin(anomalies['season'])
         st.scatter_chart(
-            anomalies[['season', 'temperature']], use_container_width=True)
+            df[df['is_anomaly']][['timestamp', 'temperature']], use_container_width=True)
 
     # Сезонные профили
     st.write("Сезонные профили:")

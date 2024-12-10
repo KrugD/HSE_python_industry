@@ -71,6 +71,7 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
+
     # Выбор города
     cities = df['city'].unique()
     selected_city = st.selectbox("Выберите город", cities)
@@ -93,10 +94,13 @@ if uploaded_file is not None:
     if not anomalies.empty:
         # Добавляем столбец для обозначения аномалий
         anomalies['is_anomaly'] = True
-        df['is_anomaly'] = df['city'].isin(
-            anomalies['city']) & df['season'].isin(anomalies['season'])
-        st.scatter_chart(
-            df[df['is_anomaly']][['timestamp', 'temperature']], use_container_width=True)
+        df['is_anomaly'] = df.apply(
+            lambda row: row['city'] in anomalies['city'].values and row['season'] in anomalies['season'].values, axis=1)
+
+        # Визуализация аномалий
+        anomaly_data = df[df['is_anomaly']][['timestamp', 'temperature']]
+        st.scatter_chart(anomaly_data.set_index(
+            'timestamp'), use_container_width=True)
 
     # Сезонные профили
     st.write("Сезонные профили:")
@@ -107,7 +111,11 @@ if uploaded_file is not None:
         current_temp = asyncio.run(
             get_current_temperature_async(selected_city, api_key))
         if current_temp is not None:
-            season = 'winter'  # Здесь нужно определить текущий сезон
+            # Определяем текущий сезон
+            current_month = pd.to_datetime("now").month
+            season = 'winter' if current_month in [12, 1, 2] else 'spring' if current_month in [
+                3, 4, 5] else 'summer' if current_month in [6, 7, 8] else 'fall'
+
             if is_temperature_normal(current_temp, seasonal_stats, selected_city, season):
                 st.write(
                     f"Температура в {selected_city}: {current_temp}°C (нормальная)")

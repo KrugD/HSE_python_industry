@@ -3,6 +3,8 @@ import pandas as pd
 import requests
 import asyncio
 
+from concurrent.futures import ThreadPoolExecutor
+
 st.title("Анализ температурных данных и мониторинг текущей температуры через OpenWeatherMap API")
 st.write("Это интерактивное приложение для мониторинга текущей температуры.")
 
@@ -47,6 +49,22 @@ def stat_city(city_data):
                           (city_data['temperature'] > (city_data['mean'] + 2 * city_data['std']))]
     return seasonal_stats, anomalies
 
+    # Получаем уникальные города
+
+
+def anomals_func(df):
+    cities = df['city'].unique()
+    city_data_list = [df[df['city'] == city] for city in cities]
+
+    # Используем ThreadPoolExecutor для многопоточности
+    with ThreadPoolExecutor() as executor:
+        results = list(executor.map(stat_city, city_data_list))
+
+    # Объединяем результаты
+    season_stats_parallel = pd.concat([result[0] for result in results])
+    anomals_parallel = pd.concat([result[1] for result in results])
+    return season_stats_parallel, anomals_parallel
+
 
 # Загрузка файла
 uploaded_file = st.file_uploader(
@@ -66,7 +84,7 @@ if uploaded_file is not None:
     st.write(city_data.describe())
 
     # Обработка данных для визуализации
-    seasonal_stats, anomalies = stat_city(df)
+    seasonal_stats, anomalies = anomals_func(df)
 
     # Визуализация временного ряда температур
     st.line_chart(df['temperature'], use_container_width=True)

@@ -87,7 +87,7 @@ if uploaded_file is not None:
     seasonal_stats, anomalies = anomals_func(df)
 
     # Визуализация временного ряда температур
-    st.line_chart(df['season', 'temperature'], use_container_width=True)
+    st.line_chart(df['temperature'], use_container_width=True)
 
     # Выделяем аномалии
     if not anomalies.empty:

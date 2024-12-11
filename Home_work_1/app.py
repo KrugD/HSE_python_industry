@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import matplotlib.pyplot as plt
+import matplotlib as plt
 
 st.title("Анализ температурных данных и мониторинг текущей температуры через OpenWeatherMap API")
 st.write("Это интерактивное приложение для мониторинга текущей температуры.")

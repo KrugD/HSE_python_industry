@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import matplotlib.pyplot as plt
 
 st.title("Анализ температурных данных и мониторинг текущей температуры через OpenWeatherMap API")
 st.write("Это интерактивное приложение для мониторинга текущей температуры.")
@@ -88,23 +89,22 @@ if uploaded_file is not None:
     # Обработка данных для визуализации
     seasonal_stats, anomalies = anomals_func(df)
 
-    # Визуализация временного ряда температур
+    # Визуализация временного ряда температур с аномалиями
     st.subheader("Временной ряд температур")
-    st.line_chart(city_data.set_index('timestamp')[
-                  'temperature'], use_container_width=True)
+    plt.figure(figsize=(10, 5))
+    plt.plot(city_data['timestamp'], city_data['temperature'],
+             label='Температура', color='blue')
 
     # Выделяем аномалии
     if not anomalies.empty:
-        # Добавляем столбец для обозначения аномалий
-        anomalies['is_anomaly'] = True
-        df['is_anomaly'] = df.apply(
-            lambda row: row['city'] in anomalies['city'].values and row['season'] in anomalies['season'].values, axis=1)
+        plt.scatter(
+            anomalies['timestamp'], anomalies['temperature'], color='red', label='Аномалии')
 
-        # Визуализация аномалий
-        anomaly_data = df[df['is_anomaly']][['timestamp', 'temperature']]
-        st.subheader("Аномалии температур")
-        st.scatter_chart(anomaly_data.set_index(
-            'timestamp'), use_container_width=True)
+    plt.xlabel('Дата')
+    plt.ylabel('Температура (°C)')
+    plt.title(f'Температура в {selected_city}')
+    plt.legend()
+    st.pyplot(plt)
 
     # Сезонные профили
     st.subheader("Сезонные профили температур")

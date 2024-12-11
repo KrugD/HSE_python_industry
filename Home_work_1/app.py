@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import matplotlib as plt
+import plotly.graph_objs as go
 
 st.title("Анализ температурных данных и мониторинг текущей температуры через OpenWeatherMap API")
 st.write("Это интерактивное приложение для мониторинга текущей температуры.")
@@ -91,20 +91,21 @@ if uploaded_file is not None:
 
     # Визуализация временного ряда температур с аномалиями
     st.subheader("Временной ряд температур")
-    plt.figure(figsize=(10, 5))
-    plt.plot(city_data['timestamp'], city_data['temperature'],
-             label='Температура', color='blue')
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=city_data['timestamp'], y=city_data['temperature'],
+                  mode='lines', name='Температура', line=dict(color='blue')))
 
     # Выделяем аномалии
     if not anomalies.empty:
-        plt.scatter(
-            anomalies['timestamp'], anomalies['temperature'], color='red', label='Аномалии')
+        fig.add_trace(go.Scatter(x=anomalies['timestamp'], y=anomalies['temperature'],
+                      mode='markers', name='Аномалии', marker=dict(color='red', size=8)))
 
-    plt.xlabel('Дата')
-    plt.ylabel('Температура (°C)')
-    plt.title(f'Температура в {selected_city}')
-    plt.legend()
-    st.pyplot(plt)
+    fig.update_layout(title=f'Температура в {selected_city}',
+                      xaxis_title='Дата',
+                      yaxis_title='Температура (°C)',
+                      legend_title='Легенда')
+    st.plotly_chart(fig)
 
     # Сезонные профили
     st.subheader("Сезонные профили температур")

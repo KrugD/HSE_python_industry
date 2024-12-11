@@ -12,7 +12,7 @@ st.write("Это интерактивное приложение для мони
 
 async def get_current_temperature_async(city, api_key):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
-    response = requests.get(url)  # Изменено на обычный запрос
+    response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
         return data['main']['temp']
@@ -89,6 +89,7 @@ if uploaded_file is not None:
     seasonal_stats, anomalies = anomals_func(df)
 
     # Визуализация временного ряда температур
+    st.subheader("Временной ряд температур")
     st.line_chart(city_data.set_index('timestamp')[
                   'temperature'], use_container_width=True)
 
@@ -101,11 +102,12 @@ if uploaded_file is not None:
 
         # Визуализация аномалий
         anomaly_data = df[df['is_anomaly']][['timestamp', 'temperature']]
+        st.subheader("Аномалии температур")
         st.scatter_chart(anomaly_data.set_index(
             'timestamp'), use_container_width=True)
 
     # Сезонные профили
-    st.write("Сезонные профили:")
+    st.subheader("Сезонные профили температур")
     st.line_chart(seasonal_stats.set_index('season')[['mean', 'std']])
 
     # Получение текущей температуры
@@ -119,8 +121,8 @@ if uploaded_file is not None:
                 3, 4, 5] else 'summer' if current_month in [6, 7, 8] else 'fall'
 
             if is_temperature_normal(current_temp, df, selected_city, season):
-                st.write(
+                st.success(
                     f"Температура в {selected_city}: {current_temp}°C (нормальная)")
             else:
-                st.write(
+                st.warning(
                     f"Температура в {selected_city}: {current_temp}°C (ненормальная)")

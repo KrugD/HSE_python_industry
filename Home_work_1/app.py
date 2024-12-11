@@ -125,4 +125,4 @@ if uploaded_file is not None:
                     f"Температура в {selected_city}: {current_temp}°C (нормальная)")
             else:
                 st.warning(
-                    f"Температура в {selected_city}: {current_temp}°C (ненормальная)")
+                    f"Температура в {selected_city}: {current_temp}°C (не нормальная)")

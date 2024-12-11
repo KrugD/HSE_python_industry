@@ -8,7 +8,7 @@ import plotly.graph_objs as go
 st.title("Анализ температурных данных и мониторинг текущей температуры через OpenWeatherMap API")
 st.write("Это интерактивное приложение для мониторинга текущей температуры.")
 
-# Функция для получения текущей температур
+# Функция для получения текущей температуры
 
 
 async def get_current_temperature_async(city, api_key):

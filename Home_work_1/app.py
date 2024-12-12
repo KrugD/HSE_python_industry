@@ -3,13 +3,12 @@ import pandas as pd
 import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import plotly.graph_objs as go
 
 st.title("Анализ температурных данных и мониторинг текущей температуры через OpenWeatherMap API")
 st.write("Это интерактивное приложение для мониторинга текущей температуры.")
 
 # Функция для получения текущей температуры
-
-
 async def get_current_temperature_async(city, api_key):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
     response = requests.get(url)
@@ -21,16 +20,11 @@ async def get_current_temperature_async(city, api_key):
         return None
 
 # Функция для проверки нормальности температуры
-
-
 def is_temperature_normal(temperature, df, city, season):
-    season_stat = df.groupby(['city', 'season'])[
-        'temperature'].agg(['mean', 'std']).reset_index()
+    season_stat = df.groupby(['city', 'season'])['temperature'].agg(['mean', 'std']).reset_index()
     if city in season_stat.city.unique() and season in season_stat.season.unique():
-        mean = season_stat[(season_stat['city'] == city) & (
-            season_stat['season'] == season)]['mean'].iloc[0]
-        std = season_stat[(season_stat['city'] == city) & (
-            season_stat['season'] == season)]['std'].iloc[0]
+        mean = season_stat[(season_stat['city'] == city) & (season_stat['season'] == season)]['mean'].iloc[0]
+        std = season_stat[(season_stat['city'] == city) & (season_stat['season'] == season)]['std'].iloc[0]
         lower_bound = mean - 3 * std
         upper_bound = mean + 3 * std
         return lower_bound <= temperature <= upper_bound
@@ -39,20 +33,14 @@ def is_temperature_normal(temperature, df, city, season):
         return None
 
 # Функция для обработки исторических данных
-
-
 def stat_city(city_data):
-    seasonal_stats = city_data.groupby('season')['temperature'].agg([
-        'mean', 'std']).reset_index()
-    city_data = city_data.merge(
-        seasonal_stats, on='season', suffixes=('', '_stats'))
+    seasonal_stats = city_data.groupby('season')['temperature'].agg(['mean', 'std']).reset_index()
+    city_data = city_data.merge(seasonal_stats, on='season', suffixes=('', '_stats'))
     anomalies = city_data[(city_data['temperature'] < (city_data['mean'] - 2 * city_data['std'])) |
                           (city_data['temperature'] > (city_data['mean'] + 2 * city_data['std']))]
     return seasonal_stats, anomalies
 
 # Получаем уникальные города
-
-
 def anomals_func(df):
     cities = df['city'].unique()
     city_data_list = [df[df['city'] == city] for city in cities]
@@ -66,10 +54,8 @@ def anomals_func(df):
     anomalies_parallel = pd.concat([result[1] for result in results])
     return season_stats_parallel, anomalies_parallel
 
-
 # Загрузка файла
-uploaded_file = st.file_uploader(
-    "Загрузите файл с историческими данными (temperature_data.csv)", type=["csv"])
+uploaded_file = st.file_uploader("Загрузите файл с историческими данными (temperature_data.csv)", type=["csv"])
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -88,23 +74,21 @@ if uploaded_file is not None:
     # Обработка данных для визуализации
     seasonal_stats, anomalies = anomals_func(df)
 
-    # Визуализация временного ряда температур
+    # Визуализация временного ряда температур с аномалиями
     st.subheader("Временной ряд температур")
-    st.line_chart(city_data.set_index('timestamp')[
-                  'temperature'], use_container_width=True)
 
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=city_data['timestamp'], y=city_data['temperature'], mode='lines', name='Температура', line=dict(color='blue')))
+    
     # Выделяем аномалии
     if not anomalies.empty:
-        # Добавляем столбец для обозначения аномалий
-        anomalies['is_anomaly'] = True
-        df['is_anomaly'] = df.apply(
-            lambda row: row['city'] in anomalies['city'].values and row['season'] in anomalies['season'].values, axis=1)
+        fig.add_trace(go.Scatter(x=anomalies['timestamp'], y=anomalies['temperature'], mode='markers', name='Аномалии', marker=dict(color='red', size=8)))
 
-        # Визуализация аномалий
-        anomaly_data = df[df['is_anomaly']][['timestamp', 'temperature']]
-        st.subheader("Аномалии температур")
-        st.scatter_chart(anomaly_data.set_index(
-            'timestamp'), use_container_width=True)
+    fig.update_layout(title=f'Температура в {selected_city}',
+                      xaxis_title='Дата',
+                      yaxis_title='Температура (°C)',
+                      legend_title='Легенда')
+    st.plotly_chart(fig)
 
     # Сезонные профили
     st.subheader("Сезонные профили температур")
@@ -112,17 +96,13 @@ if uploaded_file is not None:
 
     # Получение текущей температуры
     if api_key:
-        current_temp = asyncio.run(
-            get_current_temperature_async(selected_city, api_key))
+        current_temp = asyncio.run(get_current_temperature_async(selected_city, api_key))
         if current_temp is not None:
             # Определяем текущий сезон
             current_month = pd.to_datetime("now").month
-            season = 'winter' if current_month in [12, 1, 2] else 'spring' if current_month in [
-                3, 4, 5] else 'summer' if current_month in [6, 7, 8] else 'fall'
+            season = 'winter' if current_month in [12, 1, 2] else 'spring' if current_month in [3, 4, 5] else 'summer' if current_month in [6, 7, 8] else 'fall'
 
             if is_temperature_normal(current_temp, df, selected_city, season):
-                st.success(
-                    f"Температура в {selected_city}: {current_temp}°C (нормальная)")
+                st.success(f"Температура в {selected_city}: {current_temp}°C (нормальная)")
             else:
-                st.warning(
-                    f"Температура в {selected_city}: {current_temp}°C (не нормальная)")
+                st.warning(f"Температура в {selected_city}: {current_temp}°C (не нормальная)")
